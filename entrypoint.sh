@@ -153,10 +153,12 @@ echo "[+] Set directory is safe ($CLONE_DIR)"
 git config --global --add safe.directory "$CLONE_DIR"
 
 # Setup GPG
-if [ "$GPG_SIGN_KEY" != "" ]
+if [ -n "${GPG_SIGN_KEY:=}" ]
 then
-	echo "[+] Setup GPG"
+	echo "[+] GPG signing enabled, setup GPG"
 	echo -e "$GPG_SIGN_KEY" | gpg --import
+else
+	echo "[+] GPG signing disabled"
 fi
 
 echo "[+] Adding git commit"
