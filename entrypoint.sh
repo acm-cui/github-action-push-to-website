@@ -15,6 +15,26 @@ DESTINATION_REPOSITORY_USERNAME="${8}"
 TARGET_BRANCH="${9}"
 COMMIT_MESSAGE="${10}"
 TARGET_DIRECTORY="${11}"
+GPG_SIGN_KEY="${12}"
+
+if [ "$TARGET_DIRECTORY" == "mysubsitehere" ]
+then
+	echo "[+] GitHub Action workflow not configured"
+	exit 1
+fi
+
+if [ "$TARGET_DIRECTORY" == "" ] || [ "$TARGET_DIRECTORY" == "." ] || [ "$TARGET_DIRECTORY" == "/" ]
+then
+    echo "[+] Target directory is invalid -- cannot be root"
+    exit 2
+fi
+
+start=`echo "$TARGET_DIRECTORY" | cut -c1-1`
+if [ "$start" == "/" ]
+then
+    echo "[+] Target directory is invalid -- cannot start with /"
+    exit 3
+fi
 
 if [ -z "$DESTINATION_REPOSITORY_USERNAME" ]
 then
@@ -53,7 +73,6 @@ else
 	echo "::error::API_TOKEN_GITHUB and SSH_DEPLOY_KEY are empty. Please fill one (recommended the SSH_DEPLOY_KEY)"
 	exit 1
 fi
-
 
 CLONE_DIR=$(mktemp -d)
 
@@ -134,6 +153,13 @@ echo "[+] Set directory is safe ($CLONE_DIR)"
 # TODO: review before releasing it as a version
 git config --global --add safe.directory "$CLONE_DIR"
 
+# Setup GPG
+if [ "$GPG_SIGN_KEY" != "" ]
+then
+	echo "[+] Setup GPG"
+	echo -e "$GPG_SIGN_KEY" | gpg --import
+fi
+
 echo "[+] Adding git commit"
 git add .
 
@@ -142,7 +168,7 @@ git status
 
 echo "[+] git diff-index:"
 # git diff-index : to avoid doing the git commit failing if there are no changes to be commit
-git diff-index --quiet HEAD || git commit --message "$COMMIT_MESSAGE"
+git diff-index --quiet HEAD || git commit -S --message "$COMMIT_MESSAGE"
 
 echo "[+] Pushing git commit"
 # --set-upstream: sets de branch when pushing to a branch that does not exist
